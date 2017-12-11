@@ -19,102 +19,103 @@ class Parser:
 
     def __init__(self, scanner: Scanner) -> None:
         super().__init__()
-        self.parsed_tree = self.parse_prog(scanner)
+        self._scanner: Scanner = scanner
+        self.parsed_tree = self.parse_prog()
 
-    def parse_prog(self, scanner: Scanner):
+    def parse_prog(self):
         """PROG = BaseList """
-        return Tree('PROG').append(self.parse_base_list(scanner))
+        return Tree('PROG').append(self.parse_base_list())
 
-    def parse_base_list(self, scanner: Scanner):
+    def parse_base_list(self):
         """BaseList = (BASE)*"""
         tree = Tree('BaseList')
 
-        while not scanner.is_end() and not scanner.is_next('}'):
-            tree.append(self.parse_base(scanner))
+        while not self._scanner.is_end() and not self._scanner.is_next('}'):
+            tree.append(self.parse_base())
         return tree
 
-    def parse_base(self, scanner: Scanner):
+    def parse_base(self):
         """BASE = FOR | STMT ';' """
         tree = Tree('BASE')
-        if scanner.is_next('for'):
-            tree.append(self.parse_for(scanner))
+        if self._scanner.is_next('for'):
+            tree.append(self.parse_for())
         else:
-            tree.append(self.parse_stmt(scanner))
-        tree.append(scanner.get_next(';'))
+            tree.append(self.parse_stmt())
+        tree.append(self._scanner.get_next(';'))
         return tree
 
-    def parse_for(self, scanner: Scanner):
+    def parse_for(self):
         """FOR = 'for' '(' STMT ';' COND ';' STMT ')' BLOCK """
         tree = Tree('FOR') \
-            .append(scanner.get_next('for')) \
-            .append(scanner.get_next('(')) \
-            .append(self.parse_stmt(scanner)) \
-            .append(scanner.get_next('END')) \
-            .append(self.parse_cond(scanner)) \
-            .append(scanner.get_next('END')) \
-            .append(self.parse_stmt(scanner)) \
-            .append(scanner.get_next(')')) \
-            .append(self.parse_block(scanner))
+            .append(self._scanner.get_next('for')) \
+            .append(self._scanner.get_next('(')) \
+            .append(self.parse_stmt()) \
+            .append(self._scanner.get_next('END')) \
+            .append(self.parse_cond()) \
+            .append(self._scanner.get_next('END')) \
+            .append(self.parse_stmt()) \
+            .append(self._scanner.get_next(')')) \
+            .append(self.parse_block())
         return tree
 
-    def parse_stmt(self, scanner: Scanner):
+    def parse_stmt(self):
         """STMT = 'return' id | id '=' EXP | id ('++'|'--') """
         tree = Tree('STMT')
-        if scanner.is_next('return'):
-            tree.append(scanner.get_next('return')) \
-                .append(self.parse_id(scanner))
+        if self._scanner.is_next('return'):
+            tree.append(self._scanner.get_next('return')) \
+                .append(self.parse_id())
         else:
-            tree.append(self.parse_id(scanner))
-            if scanner.is_next('ASSIGN'):
-                tree.append(scanner.get_next('ASSIGN')) \
-                    .append(self.parse_exp(scanner))
+            tree.append(self.parse_id())
+            if self._scanner.is_next('ASSIGN'):
+                tree.append(self._scanner.get_next('ASSIGN')) \
+                    .append(self.parse_exp())
             else:
-                tree.append(scanner.get_next('UnaryOP'))
+                tree.append(self._scanner.get_next('UnaryOP'))
 
         return tree
 
-    def parse_block(self, scanner: Scanner):
+    def parse_block(self):
         """BLOCK = '{' BaseList '}' """
         tree = Tree('BLOCK') \
-            .append(scanner.get_next('{')) \
-            .append(self.parse_base_list(scanner)) \
-            .append(scanner.get_next('}'))
+            .append(self._scanner.get_next('{')) \
+            .append(self.parse_base_list()) \
+            .append(self._scanner.get_next('}'))
         return tree
 
-    def parse_exp(self, scanner: Scanner):
+    def parse_exp(self):
         """EXP = ITEM ([+-*/] ITEM)? """
         tree = Tree('EXP') \
-            .append(self.parse_item(scanner))
-        if scanner.is_next('OP'):
-            tree.append(scanner.get_next('OP')) \
-                .append(self.parse_item(scanner))
+            .append(self.parse_item())
+        if self._scanner.is_next('OP'):
+            tree.append(self._scanner.get_next('OP')) \
+                .append(self.parse_item())
         return tree
 
-    def parse_cond(self, scanner: Scanner):
+    def parse_cond(self):
         """COND = EXP ('=='|'!='|'<='|'>='|'<'|'>') EXP"""
         tree = Tree('COND') \
-            .append(self.parse_exp(scanner)) \
-            .append(scanner.get_next('COND')) \
-            .append(self.parse_exp(scanner))
+            .append(self.parse_exp()) \
+            .append(self._scanner.get_next('COND')) \
+            .append(self.parse_exp())
         return tree
 
-    def parse_item(self, scanner: Scanner):
+    def parse_item(self):
         """ITEM = id | number """
         tree = Tree('ITEM')
-        if scanner.is_next('ID'):
-            tree.append(self.parse_id(scanner))
+        if self._scanner.is_next('ID'):
+            tree.append(self.parse_id())
         else:
-            tree.append(self.parse_number(scanner))
+            tree.append(self.parse_number())
         return tree
 
-    def parse_id(self, scanner: Scanner):
+    def parse_id(self):
         """id = [A-Za-z_][A-Za-z0-9_]*"""
         tree = Tree('ID') \
-            .append(scanner.get_next('ID'))
+            .append(self._scanner.get_next('ID'))
         return tree
 
-    def parse_number(self, scanner: Scanner):
+    def parse_number(self):
         """number = [0-9]+"""
         tree = Tree('Number') \
-            .append(scanner.get_next('NUMBER'))
+            .append(self._scanner.get_next('NUMBER'))
         return tree
