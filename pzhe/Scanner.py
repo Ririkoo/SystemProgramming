@@ -26,23 +26,19 @@ class Scanner:
         return False
     
     def is_useless(self,index ,content):
-        return content[index] == ' ' or content[index] == '\t' or content[index] == '\n' or content[index] == '\r'
-        #if(content[index] == ' ' or content[index] == '\n' 
-        #    or content[index] == '\t' or content[index] == '\r'):
-        #    return True
-        #return False
+        if(content[index] == ' ' or content[index] == '\n' 
+           or content[index] == '\t' or content[index] == '\r'):
+           return True
+        return False
 
     def skip_useless_char(self,index ,content):
-        #print(len(content))
         while index < len(content):
-            #print(index)
             if(self.is_useless(index,content)):
                 index = index + 1
             else:
                 break
         return index
 
-   # def tokenization(line_str):
     
     def run_scan(self):
         file_reader=open(self.inputfile,'r')
@@ -75,7 +71,6 @@ class Scanner:
                         each_token = each_token + file_content[cur_index]
                         cur_index = cur_index +1
                     else:
-                        #print('break!')
                         break
                 if self.is_keyword(each_token):
                     self.token_list.append(Token('KEYWORD', each_token))
