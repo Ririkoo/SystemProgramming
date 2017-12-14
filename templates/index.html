@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>System Programming</title>
+  <link rel="stylesheet" href="{{url_for('static', filename='bootstrap.min.css') }}">
+  <link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="container">
+    <div class="header" style="text-align:center">
+      <h1>System Programming</h1>
+      <a class="btn btn-info" role="button" href="/">Scanner and Parser</a>
+    </div>
+    <div class="row-fluid marketing">
+      <div class="span6">
+        <form action="{{ url_for('add_entry') }}" method="post" class="add-entry form-group">
+            <a>C0 Codes:</a>
+            <textarea name="text" rows="5" cols="40" class="form-control col-sm-4"></textarea>
+            <br><br>
+            <input type="submit" class="btn btn-primary" value="Submit">
+        </form>
+      </div>
+      <div class="span6">
+        {% for message in get_flashed_messages() %}
+          <div class="flash">{{ message }}</div>
+        {% endfor %}
+      </div>
+    </div>
+</div>
+  <script src="{{url_for('static', filename='jquery-1.10.2.min.js') }}"></script>
+  <script src="{{url_for('static', filename='bootstrap.min.js') }}"></script>
+</body>
+</html>

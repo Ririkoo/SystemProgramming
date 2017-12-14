@@ -1,0 +1,23 @@
+a, h1, h2 {
+  color: #377BA8;
+}
+
+h1, h2 {
+  font-family: 'Georgia', serif;
+}
+
+
+/*.add-entry {
+  font-size: 0.9em;
+  border-bottom: 1px solid #ccc;
+}
+
+.add-entry dl {
+  font-weight: bold;
+}*/
+
+.flash {
+  background: #CEE5F5;
+  padding: 0.5em;
+  border: 1px solid #AACBE2;
+}
