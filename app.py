@@ -26,7 +26,7 @@ def index():
 def add_entry():
     c0_code = request.form['text']
     parser = Parser(Scanner(c0_code))
-    parser_res = Tools.dfs_dump(parser.parsed_tree).replace('\n', '<br>')
+    parser_res = Tools.dump_html_code(parser.parsed_tree)
     flash(Markup(parser_res))
     return redirect(url_for('index'))
 
