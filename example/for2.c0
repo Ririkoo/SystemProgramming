@@ -5,6 +5,6 @@ for (i=1; i<=9; i++)
   {
     p = i * j;
     sum = sum + p;
-  }
-}
+  };
+};
 return sum;
