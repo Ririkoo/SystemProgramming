@@ -1,5 +1,5 @@
-from Lays.parser import Parser
-from Lays.scanner import Scanner
+from code.lays.parser import Parser
+from code.lays.scanner import Scanner
 
 if __name__ == '__main__':
     program = """

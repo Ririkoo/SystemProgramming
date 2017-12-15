@@ -1,5 +1,5 @@
-from Lays.scanner import Scanner
-from Lays.treer import Tree
+from code.lays.scanner import Scanner
+from code.lays.tree import Tree
 
 c0_ebnf = '''
 PROG = BaseList 

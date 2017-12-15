@@ -1,9 +1,9 @@
 import os
 from flask import Flask, request, session, g, redirect, url_for, \
      abort, render_template, flash, jsonify
-from processlib.scanner import Scanner
-from processlib.parser import Parser
-import processlib.tools as Tools
+from processlib.Scanner import Scanner
+from processlib.Parser import Parser
+import processlib.Tools as Tools
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 

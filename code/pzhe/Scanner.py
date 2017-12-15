@@ -1,6 +1,4 @@
-import os
-import re
-from pzhe.Token import Token 
+from code.pzhe.Token import Token
 
 TOKEN_TYPE = ['ID', 'NUMBER', 'KEYWORD','OPERATOR', 'DELIMITER', 'OTHERS']
 KEYWORD_SET = ['if', 'else', 'do', 'while', 'for' ,'return']

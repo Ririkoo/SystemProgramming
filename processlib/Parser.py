@@ -1,5 +1,5 @@
-from processlib.scanner import Scanner
-from processlib.treer import Tree
+from processlib.Scanner import Scanner
+from processlib.Tree import Tree
 
 c0_ebnf = '''
 PROG = BaseList
@@ -15,11 +15,12 @@ id = [A-Za-z_][A-Za-z0-9_]*
 number = [0-9]+
 '''
 
+
 class Parser:
 
     def __init__(self, scanner: Scanner) -> None:
         super().__init__()
-        self._scanner:Scanner = scanner
+        self._scanner: Scanner = scanner
         self.parsed_tree = self.parse_prog()
 
     def parse_prog(self):
