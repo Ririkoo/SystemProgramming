@@ -32,4 +32,5 @@ def add_entry():
 
 
 if __name__ == '__main__':
-    app.run()
+    # Remote Debug
+    app.run(host='0.0.0.0',port=5000)
