@@ -1,8 +1,6 @@
 import re
 from collections import namedtuple
 
-
-
 Token = namedtuple('Token', ['type', 'value'])
 TokenType = namedtuple('TokenType', ['name', 'alias'])
 
@@ -67,6 +65,3 @@ class Scanner:
 
     def is_end(self):
         return self.ended
-
-
-

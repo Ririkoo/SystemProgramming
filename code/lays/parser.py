@@ -15,6 +15,7 @@ id = [A-Za-z_][A-Za-z0-9_]*
 number = [0-9]+
 '''
 
+
 class Parser:
 
     def __init__(self, scanner: Scanner) -> None:

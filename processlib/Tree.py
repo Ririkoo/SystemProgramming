@@ -10,4 +10,3 @@ class Tree:
     def append(self, child_tree):
         self.children.append(child_tree)
         return self
-

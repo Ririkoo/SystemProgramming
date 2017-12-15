@@ -1,11 +1,10 @@
 a, h1, h2 {
-  color: #377BA8;
+    color: #377BA8;
 }
 
 h1, h2 {
-  font-family: 'Georgia', serif;
+    font-family: 'Georgia', serif;
 }
-
 
 /*.add-entry {
   font-size: 0.9em;
@@ -17,7 +16,7 @@ h1, h2 {
 }*/
 
 .flash {
-  background: #CEE5F5;
-  padding: 0.5em;
-  border: 1px solid #AACBE2;
+    background: #CEE5F5;
+    padding: 0.5em;
+    border: 1px solid #AACBE2;
 }
