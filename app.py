@@ -25,10 +25,15 @@ def index():
 @app.route('/parse', methods=['POST'])
 def add_entry():
     c0_code = request.form['text']
-    parser = Parser(Scanner(c0_code))
-    parser_res = Tools.dump_html_code(parser.parsed_tree)
-    flash(Markup(parser_res))
-    return redirect(url_for('index'))
+    try:
+        flash(c0_code, 'editor')
+        parser = Parser(Scanner(c0_code))
+        parser_res = Tools.TreeTools.dump_html_code(parser.parsed_tree)
+        flash(Markup(parser_res),'output')
+    except RuntimeError as e:
+        flash(Markup(Tools.dump_to_html(str(e))), 'output')
+    finally:
+        return redirect(url_for('index'))
 
 
 if __name__ == '__main__':

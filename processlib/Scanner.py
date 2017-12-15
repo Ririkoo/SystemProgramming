@@ -1,12 +1,12 @@
 import re
 from collections import namedtuple
 
-Token = namedtuple('Token', ['type', 'value'])
+Token = namedtuple('Token', ['type', 'value', 'line', 'position'])
 TokenType = namedtuple('TokenType', ['name', 'regex'])
 
 
 class Scanner:
-    token_kinds = [
+    TOKEN_TYPES = [
         TokenType('KEYWORD', r'for|return'),
         TokenType('NUMBER', r'[0-9]+'),
         TokenType('ASSIGN', r'='),
@@ -20,37 +20,48 @@ class Scanner:
         TokenType('SPACE', r'[ \t]+'),
         TokenType('OTHER', r'.')
     ]
-    token_regex = '|'.join(('(?P<{}>{})'.format(token_kind.name, token_kind.regex) for token_kind in token_kinds))
+    TOKEN_REGEX = '|'.join(('(?P<{}>{})'.format(token_kind.name, token_kind.regex) for token_kind in TOKEN_TYPES))
 
     def __init__(self, content: str) -> None:
         super().__init__()
-        self.context = self._generator(Scanner.token_regex, content)
-        self.next_token = next(self.context)
+        self.content = content
+        self.context = self._generator(Scanner.TOKEN_REGEX, content)
+        self.next_token: Token = next(self.context)
         self.ended = False
 
-    def _generator(self, regex, content):
+    def _generator(self, regex: str, content: str) -> Token:
+        line = 1
+        next_token_pos = 1
         for find in re.finditer(regex, content):
-            token_kind = find.lastgroup
-            token = find.group(token_kind)
-            if token_kind == 'SPACE' or token_kind == 'NEWLINE':
-                continue
-            if token_kind == 'OTHER':
-                raise RuntimeError('未知類型token:{}'.format(token))
-            yield Token(next(token_type for token_type in Scanner.token_kinds if token_type.name == token_kind),
-                        token)
+            kind = find.lastgroup
+            value = find.group(kind)
+            if kind == 'NEWLINE':
+                line += 1
+                next_token_pos = 1
+            else:
+                next_token_pos += len(value)
 
-    def is_next(self, token: str):
+            if kind == 'SPACE' or kind == 'NEWLINE':
+                continue
+            if kind == 'OTHER':
+                raise RuntimeError('未知類型token:{}'.format(value))
+            yield Token(next(token_type for token_type in Scanner.TOKEN_TYPES if token_type.name == kind),
+                        value, line, next_token_pos - len(value))
+
+    def is_next(self, token: str) -> bool:
         if self.next_token.type.name != token and token != self.next_token.value:
             return False
         elif self.ended is True:
             raise RuntimeError('已經讀到文件結尾了')
         return True
 
-    def get_next(self, token: str):
-        # token = None
+    def get_next(self, token: str) -> Token:
         try:
             if self.next_token.type.name != token and token != self.next_token.value:
-                raise RuntimeError('預期{}但得到{}'.format(token, self.next_token))
+                raise RuntimeError('預期{}但得到{}\n{}\n{}^'.format(token,
+                                                               self.next_token,
+                                                               self.content.split('\n')[self.next_token.line-1],
+                                                               ' ' * (self.next_token.position - 1)))
             elif self.ended is True:
                 raise RuntimeError('已經讀到文件結尾了')
 

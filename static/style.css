@@ -19,4 +19,6 @@ h1, h2 {
     background: #CEE5F5;
     padding: 0.5em;
     border: 1px solid #AACBE2;
+    font-family:"Courier New", Courier, monospace,"微軟正黑體";
+    font-weight: bolder;
 }
