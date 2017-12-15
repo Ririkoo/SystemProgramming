@@ -40,7 +40,6 @@ class Scanner:
                         token)
 
     def is_next(self, token: str):
-        # if self.next_token.type.name != token and token not in self.next_token.type.alias and token != self.next_token.value:
         if self.next_token.type.name != token and token != self.next_token.value:
             return False
         elif self.ended is True:
@@ -51,7 +50,6 @@ class Scanner:
         # token = None
         try:
             if self.next_token.type.name != token and token != self.next_token.value:
-                # if self.next_token.type.name != token_type and token_type not in self.next_token.type.alias:
                 raise RuntimeError('預期{}但得到{}'.format(token, self.next_token))
             elif self.ended is True:
                 raise RuntimeError('已經讀到文件結尾了')
