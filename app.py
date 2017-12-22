@@ -1,9 +1,12 @@
 import os
+import traceback
 
 from flask import Flask, request, redirect, url_for, \
     render_template, flash, Markup
 
 import processlib.Tools as Tools
+from processlib.SemanticAnalyser import SemanticAnalyser
+from  processlib.Tools import TreeTools
 from processlib.Parser import Parser
 from processlib.Scanner import Scanner
 
@@ -15,6 +18,8 @@ SECRET_KEY = 'mkz75asklLd8wdA9'
 # create app
 app = Flask(__name__)
 app.config.from_object(__name__)
+# parser
+SAnalyser = SemanticAnalyser(Parser(Scanner()))
 
 
 @app.route('/')
@@ -27,15 +32,16 @@ def add_entry():
     c0_code = request.form['text']
     try:
         flash(c0_code, 'editor')
-        parser = Parser(Scanner(c0_code))
-        parser_res = Tools.TreeTools.dump_html_code(parser.parsed_tree)
-        flash(Markup(parser_res),'output')
-    except RuntimeError as e:
+
+        parser_res = TreeTools.dump_html_code(SAnalyser.parse(c0_code))
+        flash(Markup(parser_res), 'output')
+    except Exception as e:
         flash(Markup(Tools.dump_to_html(str(e))), 'output')
+        traceback.print_exc()
     finally:
         return redirect(url_for('index'))
 
 
 if __name__ == '__main__':
     # Remote Debug
-    app.run(host='0.0.0.0',port=5000)
+    app.run(host='0.0.0.0', port=5000)
