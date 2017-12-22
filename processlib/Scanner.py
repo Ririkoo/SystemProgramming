@@ -78,3 +78,85 @@ class Scanner:
         self.context = self._generator(Scanner.TOKEN_REGEX, content)
         self.next_token: ScannerToken = next(self.context)
         self.ended = False
+
+
+class BNFScanner:
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.context = None
+
+    def _generator(self, content):
+        request, step_mode = None, None
+        result = None
+        end = False
+        while content != '' or end:
+            request, step_mode = yield result
+            if end:
+                return
+            find = re.match(request, content)
+            if find is None:
+                result = None
+                continue
+
+            result = find.group(0)
+            if step_mode:
+                content = content[find.end():]
+                if len(content) is 0:
+                    end = True
+
+    def is_next(self, request, re_mode=False):
+        if self.is_end():
+            raise RuntimeError('End of the scanner')
+        if re_mode is False:
+            request = re.escape(request)
+        result = self.context.send((request, False))
+        if result is None:
+            return False
+        return True
+
+    def get_next(self, request, re_mode=False):
+        if self.is_end():
+            raise RuntimeError('End of the scanner')
+        if re_mode is False:
+            request = re.escape(request)
+        result = self.context.send((request, True))
+        if result is None:
+            return None
+        return result
+
+    def is_end(self):
+        try:
+            self.context.send(('', False))
+        except StopIteration:
+            return True
+        return False
+
+    def set(self, content):
+        self.context = self._generator(content)
+        next(self.context)
+
+
+if __name__ == '__main__':
+    scanner = BNFScanner()
+    scanner.set('asd 123 asf')
+    print(scanner.is_next('asd'))
+    print(scanner.is_next('123'))
+    print(scanner.get_next('123'))
+    print(scanner.get_next('asd'))
+    print(scanner.get_next(' '))
+    print(scanner.get_next('123'))
+    print(scanner.get_next(' '))
+    print(scanner.get_next('asf'))
+    print(scanner.is_end())
+
+    scanner.set('asd 123 asf')
+    print(scanner.is_next('asd'))
+    print(scanner.is_next('123'))
+    print(scanner.get_next('123'))
+    print(scanner.get_next('[a-z]*', re_mode=True))
+    print(scanner.get_next(' '))
+    print(scanner.get_next('[0-9]*', re_mode=True))
+    print(scanner.get_next(' '))
+    print(scanner.get_next('[a-z]*', re_mode=True))
+    print(scanner.is_end())
