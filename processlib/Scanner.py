@@ -1,4 +1,5 @@
 import re
+from typing import NamedTuple
 
 from processlib.Token import ScannerToken, TokenType
 
@@ -80,20 +81,55 @@ class Scanner:
         self.ended = False
 
 
+class ContextEndedError(Exception):
+
+    def __init__(self, message='掃描器已經到內容尾端了') -> None:
+        super().__init__(message)
+
+
+class UnExceptedTokenError(Exception):
+    def __init__(self, unexpected: 'UnExceptedToken', content, message=None) -> None:
+        super().__init__('預期 {} 但沒有遇到符合的內容 \n{}\n{}^'.format(repr(unexpected.expected),
+                                                             content.split('\n')[unexpected.line - 1],
+                                                             ' ' * (unexpected.position - 1)) + (
+                             '，' + message if message is not None else ''))
+
+
+UnExceptedToken = NamedTuple('UnExceptedToken', (('expected', str), ('line', int), ('position', int)))
+
+
 class BNFScanner:
 
     def __init__(self) -> None:
         super().__init__()
+        self.content = None
         self.context = None
 
     def _generator(self, content):
         request, step_mode = None, None
         result = None
         end = False
+        line = 1
+        current_token_pos = 1
+        next_token_pos = 1
         while content != '' or end:
-            request, step_mode = yield result
+            request, step_mode = yield \
+                UnExceptedToken(request, line, next_token_pos) if result is None else ScannerToken(None, result, line,
+                                                                                                   current_token_pos)
             if end:
                 return
+            # 處理空格與換行
+            while True:
+                find = re.match('(\n+)|(\r+)|( +)', content)
+                if find is None:
+                    break
+
+                content = content[find.end():]
+                next_token_pos += find.end()
+                if find is not None and '\n' in find.group(0):
+                    current_token_pos = next_token_pos = 1
+                    line += 1
+            # 處理請求
             find = re.match(request, content)
             if find is None:
                 result = None
@@ -101,28 +137,45 @@ class BNFScanner:
 
             result = find.group(0)
             if step_mode:
+                # 步進模式將會將內容截短
                 content = content[find.end():]
+                current_token_pos = next_token_pos
+                next_token_pos += find.end()
+
                 if len(content) is 0:
                     end = True
 
     def is_next(self, request, re_mode=False):
         if self.is_end():
-            raise RuntimeError('End of the scanner')
+            raise ContextEndedError()
         if re_mode is False:
             request = re.escape(request)
+        # else:
+        #     spl = re.split('(\[|\])', request)
+        #     indices = [i for i, x in enumerate(spl) if x == "["]
+        #     for i in indices:
+        #         spl[i + 1] = re.escape(spl[i + 1])
+        #     request = ''.join(spl)
         result = self.context.send((request, False))
-        if result is None:
+        if isinstance(result, UnExceptedToken):
             return False
         return True
 
     def get_next(self, request, re_mode=False):
         if self.is_end():
-            raise RuntimeError('End of the scanner')
+            raise ContextEndedError()
         if re_mode is False:
             request = re.escape(request)
+        # else:
+        #     spl = re.split('(\[|\])', request)
+        #     indices = [i for i, x in enumerate(spl) if x == "["]
+        #     for i in indices:
+        #         spl[i + 1] = re.escape(spl[i + 1])
+        #     request = ''.join(spl)
         result = self.context.send((request, True))
-        if result is None:
-            return None
+        if isinstance(result, UnExceptedToken):
+            raise UnExceptedTokenError(result, self.content)
+
         return result
 
     def is_end(self):
@@ -133,30 +186,36 @@ class BNFScanner:
         return False
 
     def set(self, content):
+        self.content = content
         self.context = self._generator(content)
+        # 初始化產生器
         next(self.context)
 
 
 if __name__ == '__main__':
     scanner = BNFScanner()
-    scanner.set('asd 123 asf')
-    print(scanner.is_next('asd'))
-    print(scanner.is_next('123'))
-    print(scanner.get_next('123'))
-    print(scanner.get_next('asd'))
-    print(scanner.get_next(' '))
-    print(scanner.get_next('123'))
-    print(scanner.get_next(' '))
-    print(scanner.get_next('asf'))
-    print(scanner.is_end())
+    # scanner.set(' asd 123 asf')
+    # print(scanner.is_next('asd'))
+    # print(scanner.is_next('123'))
+    # print(scanner.get_next('123'))
+    # print(scanner.get_next('asd'))
+    # print(scanner.get_next(' '))
+    # print(scanner.get_next('123'))
+    # print(scanner.get_next(' '))
+    # print(scanner.get_next('asf'))
+    # print(scanner.is_end())
 
-    scanner.set('asd 123 asf')
+    scanner.set('\n  \n asd 123 asf\n af asd s')
     print(scanner.is_next('asd'))
     print(scanner.is_next('123'))
-    print(scanner.get_next('123'))
+    print(scanner.is_next('123'))
     print(scanner.get_next('[a-z]*', re_mode=True))
-    print(scanner.get_next(' '))
+    # print(scanner.get_next(' '))
     print(scanner.get_next('[0-9]*', re_mode=True))
-    print(scanner.get_next(' '))
+    # print(scanner.get_next(' '))
+    print(scanner.get_next('[a-z]*', re_mode=True))
+    print(scanner.get_next('[a-z]*', re_mode=True))
+    print(scanner.get_next('[a-z]*', re_mode=True))
+    print(scanner.get_next('[0-9]+', re_mode=True))
     print(scanner.get_next('[a-z]*', re_mode=True))
     print(scanner.is_end())

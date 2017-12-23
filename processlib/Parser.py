@@ -1,4 +1,10 @@
-from processlib.Scanner import Scanner
+import re
+from typing import List, Union, Dict
+
+from processlib.BNF import RuleType, ModifierType, BNFBaseRule, BNFRule
+from processlib.Scanner import Scanner, BNFScanner, ContextEndedError, UnExceptedTokenError
+from processlib.Token import TokenType, ScannerToken
+from processlib.Tools import TreeTools, BNFTools
 from processlib.Tree import Tree
 
 c0_ebnf = '''
@@ -6,9 +12,9 @@ PROG = BaseList
 BaseList = (BASE)*
 BASE = FOR | STMT ';'
 FOR = 'for' '(' STMT ';' COND ';' STMT ')' BLOCK
-STMT = 'return' id | id '=' EXP | id ('++'|'--')
+STMT = 'return' id | id ('=' EXP |  ('++'|'--'))
 BLOCK = '{' BaseList '}'
-EXP = ITEM ([+-*/] ITEM)?
+EXP = ITEM ([+\-*/] ITEM)?
 COND = EXP ('=='|'!='|'<='|'>='|'<'|'>') EXP
 ITEM = id | number
 id = [A-Za-z_][A-Za-z0-9_]*
@@ -46,7 +52,8 @@ class Parser:
             tree.append(self._parse_for())
         else:
             tree.append(self._parse_stmt())
-        tree.append(self._scanner.get_next(';'))
+            tree.append(self._scanner.get_next(';'))
+
         return tree
 
     def _parse_for(self):
@@ -124,3 +131,233 @@ class Parser:
         tree = Tree('Number') \
             .append(self._scanner.get_next('NUMBER'))
         return tree
+
+
+class ParseError(Exception):
+
+    def __init__(self, unexpected:UnExceptedTokenError) -> None:
+        super().__init__(str(unexpected) + '\n已經無法回溯，解析失敗')
+
+
+class BNFParser:
+
+    def __init__(self, bnf_rules, scanner: BNFScanner, enter_point: str) -> None:
+        super().__init__()
+        self.rules: Dict[str, BNFRule] = self.bnf_parse(bnf_rules)
+        self.scanner: BNFScanner = scanner
+        self.enter_point: str = enter_point
+
+    TOKEN_TYPES = [
+        TokenType('range_token', "(\[.*\](\+|\*)?)+"),
+        TokenType('token', r"'[^ ']+'"),
+        TokenType('group', r'[()]'),
+        TokenType('divider', r'\|'),
+        TokenType('other_rules', r'[a-zA-Z]+'),
+        TokenType('modifier', r'\+|\*|\?'),
+        TokenType('space', r'[ \t]+'),
+        TokenType('what_ever', r'.')
+    ]
+    TOKEN_REGEX = '|'.join(('(?P<{}>{})'.format(token_kind.name, token_kind.regex) for token_kind in TOKEN_TYPES))
+
+    def bnf_parse(self, rules: str):
+        rules = rules.strip().split('\n')
+        rules = [rule.strip() for rule in rules]
+        rules = [[r.strip() for r in rule.split('=', 1)] for rule in rules]
+        # 解析成token
+        rules = [(rule[0], self.bnf_parse_rule_token(rule[1]), RuleType.normal) for rule in rules]
+        # print('\n'.join(str(x) for x in rules))
+        # 解析成樹
+        rules = self.bnf_parse_rules_tree(rules)
+        return rules
+
+    def bnf_parse_rule_token(self, rule: str):
+        regex = re.compile(self.TOKEN_REGEX)
+        result = []
+        for find in re.finditer(regex, rule):
+            kind = find.lastgroup
+            value = find.group(kind)
+            result.append((kind, value))
+        return tuple(result)
+
+    def bnf_parse_rules_tree(self, rules):
+        internal_rule_tree = {}
+        rule_list_tree = {}
+
+        def internal_id_generator():
+            x = 0
+            while True:
+                yield 'internal_' + str(x)
+                x += 1
+
+        internal_id = internal_id_generator()
+
+        for rule in rules:
+            sub_rules: List[List[BNFBaseRule]] = []
+            sub_rule: List[BNFBaseRule] = []
+            token_generator = iter(rule[1])
+            while True:
+                try:
+                    token = next(token_generator)
+
+                    if token[0] == 'token':
+                        sub_rule.append(BNFBaseRule(RuleType.string, token[1][1:-1], ModifierType.none))
+                    elif token[0] == 'range_token':
+                        sub_rule.append(BNFBaseRule(RuleType.regex, token[1], ModifierType.none))
+                    elif token[0] == 'other_rules':
+                        sub_rule.append(BNFBaseRule(RuleType.link, token[1], ModifierType.none))
+                    elif token[0] == 'divider':
+                        sub_rules.append(sub_rule)
+                        sub_rule = []
+                    elif token[0] == 'modifier':
+                        sub_rule[-1] = sub_rule[-1]._replace(modifier=ModifierType(token[1]))
+                    elif token[0] == 'spcae':
+                        continue
+                    elif token[0] == 'group':
+                        depth = 0
+                        id = next(internal_id)
+                        internal_rule = (id, [], RuleType.internal)
+                        while True:
+                            if token[0] == 'group':
+                                if token[1] == '(':
+                                    if depth != 0:
+                                        internal_rule[1].append(token)
+                                    depth += 1
+                                elif token[1] == ')':
+                                    depth -= 1
+                                    if depth != 0:
+                                        internal_rule[1].append(token)
+                                if depth == 0:
+                                    break
+                            else:
+                                internal_rule[1].append(token)
+
+                            token = next(token_generator)
+                        rules.append(internal_rule)
+                        sub_rule.append(BNFBaseRule(RuleType.link, id, ModifierType.none))
+                except StopIteration:
+                    sub_rules.append(sub_rule)
+                    rule_list_tree[rule[0]] = BNFRule(rule[2], rule[0], sub_rules)
+                    break
+
+        result = {}
+        result.update(rule_list_tree)
+        result.update(internal_rule_tree)
+        return result
+
+    def parse(self, code):
+        self.scanner.set(content=code)
+        return self.parse_tree(self.rules[self.enter_point])
+
+    def parse_tree(self, rule: BNFRule):
+        tree = Tree(rule.name)
+        last_unexpected = None
+        for sub_rule in rule.sub_rules:
+            first_try = True
+            next_sub = False
+            for token in sub_rule:
+                try:
+                    if token.modifier is ModifierType.none:
+                        result = self.get_token(token)
+                        tree.append(result)
+                    elif token.modifier is ModifierType.repeat_what_ever:
+                        while True:
+                            try:
+                                result = self.try_get_token(token)
+                            except ContextEndedError:
+                                break
+
+                            if result is None:
+                                break
+                            else:
+                                tree.append(result)
+                    elif token.modifier is ModifierType.repeat_once_or_nothing_happened:
+                        try:
+                            result = self.try_get_token(token)
+                        except ContextEndedError:
+                            result = None
+                        if result is not None:
+                            tree.append(result)
+                    elif token.modifier is ModifierType.repeat_more_than_once:
+                        result = self.get_token(token)
+                        tree.append(result)
+                        while True:
+                            try:
+                                result = self.try_get_token(token)
+                            except ContextEndedError:
+                                break
+                            if result is None:
+                                break
+                            else:
+                                tree.append(result)
+                except UnExceptedTokenError as e:
+                    last_unexpected = e
+                    if first_try is True:
+                        next_sub = True
+                        break
+                    else:
+                        raise ParseError(e)
+
+                # tree.append(result)
+                first_try = False
+            if next_sub:
+                continue
+
+            return tree
+        raise last_unexpected
+
+    def get_token(self, token) -> Union[Tree, ScannerToken]:
+        result = None
+
+        if token.type is RuleType.string:
+            result = self.scanner.get_next(token.content)
+        elif token.type is RuleType.regex:
+            result = self.scanner.get_next(token.content, re_mode=True)
+        elif token.type is RuleType.link:
+            result = self.parse_tree(self.rules[token.content])
+
+        if isinstance(result, Tree) and len(result.children) == 0:
+            return None
+        if isinstance(result, Tree) and len(result.children) == 1 and \
+                isinstance(result.children[0], ScannerToken) and \
+                result.children[0].type is None:
+            return result.children[0]._replace(type=result.name)
+        return result
+
+    def try_get_token(self, token) -> Union[Tree, ScannerToken]:
+        try:
+            return self.get_token(token)
+        except UnExceptedTokenError:
+            pass
+        return None
+
+
+if __name__ == '__main__':
+    bnf_parser = BNFParser(c0_ebnf, BNFScanner(), 'PROG')
+    BNFTools.dump_rules_str(bnf_parser.rules)
+    progs = ['''sum = 0;
+for (i=1; i<=9; i++)
+{
+  for (j=1; j<=9; j++)
+  {
+    p = i * j;
+    sum = sum + p;
+  }
+}
+return sum;
+''', '''a = 1;
+b = 2;
+c = a + b;
+return c;''', '''sum = 0;
+for (i=0; i<=10; i++)
+{
+  p = i * i;
+  sum = sum + p;
+};
+return sum;
+''']
+    for prog in progs:
+        print(prog)
+        _result = bnf_parser.parse(prog)
+        # print(_result)
+        TreeTools.dump_to_console(_result)
+        print('=======')

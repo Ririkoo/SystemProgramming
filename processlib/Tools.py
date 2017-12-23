@@ -1,5 +1,6 @@
-from typing import Generator, Union, Tuple
+from typing import Generator, Union, Tuple, Dict
 
+from processlib.BNF import RuleType, ModifierType, BNFRule
 from processlib.Token import ScannerToken, SemanticToken
 from processlib.Tree import Tree
 
@@ -45,6 +46,37 @@ class TreeTools:
                     yield (node, depth + 1, tree, index)
 
         return each_nodes(dfs_tree)
+
+
+class BNFTools:
+    @staticmethod
+    def dump_rules_str(rules: Dict[str, BNFRule]):
+        for rule in rules.values():
+            if rule.type is RuleType.internal:
+                continue
+            print(rule.name + ' = ' + BNFTools.dump_rule_str(rules, rule))
+
+    @staticmethod
+    def dump_rule_str(all_rules, rule):
+        result = []
+        for sub in rule.sub_rules:
+            result_sub = []
+            for token in sub:
+                if token.type is RuleType.string:
+                    result_sub.append("'" + token.content + "'")
+                elif token.type is RuleType.regex:
+                    result_sub.append(token.content)
+
+                elif token.type is RuleType.link:
+                    if all_rules[token.content].type == RuleType.internal:
+                        result_sub.append('(' + BNFTools.dump_rule_str(all_rules, all_rules[token.content]) + ')')
+                    else:
+                        result_sub.append(token.content)
+
+                if token.modifier is not ModifierType.none:
+                    result_sub[-1] += token.modifier.value
+            result.append(' '.join(result_sub))
+        return ' | '.join(result)
 
 
 def dump_to_html(content):
