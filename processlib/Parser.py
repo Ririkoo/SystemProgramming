@@ -20,7 +20,20 @@ ITEM = id | number
 id = [A-Za-z_][A-Za-z0-9_]*
 number = [0-9]+
 '''
-
+c0_ebnf_improved = '''
+PROG = BaseList
+BaseList = (BASE)*
+BASE = FOR | STMT ';'
+FOR = 'for' '(' STMT ';' COND ';' STMT ')' BLOCK
+STMT = 'return' id | id ('=' EXP |  ('++'|'--'))
+BLOCK = '{' BaseList '}'
+EXP = ITEM ([+\-*/] ITEM)*
+COND = EXP ('=='|'!='|'<='|'>='|'<'|'>') EXP
+ITEM = id | number | string
+id = [A-Za-z_][A-Za-z0-9_]*
+number = [0-9]+
+string = '"' [A-Za-z0-9_]* '"'
+'''
 
 class Parser:
 
