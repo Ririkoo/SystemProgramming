@@ -5,10 +5,10 @@ from flask import Flask, request, redirect, url_for, \
     render_template, flash, Markup
 
 import processlib.Tools as Tools
+from processlib.Parser import BNFParser, c0_ebnf, Parser
+from processlib.Scanner import BNFScanner, Scanner
 from processlib.SemanticAnalyser import SemanticAnalyser
-from  processlib.Tools import TreeTools
-from processlib.Parser import Parser
-from processlib.Scanner import Scanner
+from processlib.Tools import TreeTools
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
@@ -19,6 +19,7 @@ SECRET_KEY = 'mkz75asklLd8wdA9'
 app = Flask(__name__)
 app.config.from_object(__name__)
 # parser
+SAnalyser = SemanticAnalyser(BNFParser(c0_ebnf, 'PROG', BNFScanner()))
 SAnalyser = SemanticAnalyser(Parser(Scanner()))
 
 

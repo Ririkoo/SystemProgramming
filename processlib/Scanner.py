@@ -73,11 +73,11 @@ class Scanner:
                 continue
             if kind == 'OTHER':
                 raise RuntimeError('未知類型token:{}'.format(value))
-            yield ScannerToken(next(token_type for token_type in Scanner.TOKEN_TYPES if token_type.name == kind),
+            yield ScannerToken(kind,
                                value, line, next_token_pos - len(value))
 
     def is_next(self, token: str) -> bool:
-        if self.next_token.type.name != token and token != self.next_token.value:
+        if self.next_token.type != token and token != self.next_token.value:
             return False
         elif self.ended is True:
             raise ContextEndedError()
@@ -85,7 +85,7 @@ class Scanner:
 
     def get_next(self, token: str) -> ScannerToken:
         try:
-            if self.next_token.type.name != token and token != self.next_token.value:
+            if self.next_token.type != token and token != self.next_token.value:
                 # raise RuntimeError('預期{}但得到{}\n{}\n{}^'.format(token,
                 #                                                self.next_token,
                 #                                                self.content.split('\n')[self.next_token.line - 1],

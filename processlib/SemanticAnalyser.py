@@ -14,10 +14,10 @@ class SemanticAnalyser:
     def _parse_semantic(self, tree: Tree):
         for node, depth, parent, index in TreeTools.flatten(tree):
             if isinstance(node, ScannerToken):
-                if node.type.name == 'ID':
-                    parent.children[index] = SemanticToken(node.type.name, node.value, 'number', node.line,
+                if node.type == 'ID':
+                    parent.children[index] = SemanticToken(node.type, node.value, 'number', node.line,
                                                            node.position)
                 else:
-                    parent.children[index] = SemanticToken(node.type.name, node.value, None, node.line,
+                    parent.children[index] = SemanticToken(node.type, node.value, None, node.line,
                                                            node.position)
         return tree
