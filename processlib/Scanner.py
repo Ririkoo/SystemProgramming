@@ -4,6 +4,35 @@ from typing import NamedTuple
 from processlib.Token import ScannerToken, TokenType
 
 
+class ContextEndedError(Exception):
+
+    def __init__(self, excepted, message='掃描器已經到內容尾端了') -> None:
+        super().__init__(('' if excepted is None else '預期 ' + repr(excepted) + ' 但是') + message)
+
+
+class UnExceptedTokenError(Exception):
+    def __init__(self, unexpected: 'UnExceptedToken', content, message=None) -> None:
+        lines = content.split('\n')
+        line_number_width = len(str(unexpected.line + 1))
+        preview = ('...',
+                   (str(unexpected.line - 1).ljust(line_number_width) + '| ' + lines[unexpected.line - 2]) if len(
+                       lines) > (
+                                                                                                                      unexpected.line - 2) >= 0 else '',
+                   str(unexpected.line).ljust(line_number_width) + '| ' + lines[unexpected.line - 1],
+                   '>'.ljust(line_number_width) + '| ' + ' ' * (unexpected.position - 1) + '^',
+                   (str(unexpected.line + 1).ljust(line_number_width) + '| ' + lines[unexpected.line]) if len(
+                       lines) > unexpected.line else '',
+                   '...')
+        preview = '\n'.join((line for line in preview if line != ''))
+        super().__init__(
+            '於{}:{}預期 {} 但沒有遇到符合的內容:\n{}'.format(unexpected.line, unexpected.position,
+                                                 repr(unexpected.expected), preview) + (
+                '，' + message if message is not None else ''))
+
+
+UnExceptedToken = NamedTuple('UnExceptedToken', (('expected', str), ('line', int), ('position', int)))
+
+
 class Scanner:
     TOKEN_TYPES = [
         TokenType('KEYWORD', r'for|return'),
@@ -51,18 +80,20 @@ class Scanner:
         if self.next_token.type.name != token and token != self.next_token.value:
             return False
         elif self.ended is True:
-            raise RuntimeError('已經讀到文件結尾了')
+            raise ContextEndedError()
         return True
 
     def get_next(self, token: str) -> ScannerToken:
         try:
             if self.next_token.type.name != token and token != self.next_token.value:
-                raise RuntimeError('預期{}但得到{}\n{}\n{}^'.format(token,
-                                                               self.next_token,
-                                                               self.content.split('\n')[self.next_token.line - 1],
-                                                               ' ' * (self.next_token.position - 1)))
+                # raise RuntimeError('預期{}但得到{}\n{}\n{}^'.format(token,
+                #                                                self.next_token,
+                #                                                self.content.split('\n')[self.next_token.line - 1],
+                #                                                ' ' * (self.next_token.position - 1)))
+                raise UnExceptedTokenError(UnExceptedToken(token, self.next_token.line, self.next_token.position),
+                                           self.content)
             elif self.ended is True:
-                raise RuntimeError('已經讀到文件結尾了')
+                raise ContextEndedError()
 
             token = self.next_token
             self.next_token = next(self.context)
@@ -79,23 +110,6 @@ class Scanner:
         self.context = self._generator(Scanner.TOKEN_REGEX, content)
         self.next_token: ScannerToken = next(self.context)
         self.ended = False
-
-
-class ContextEndedError(Exception):
-
-    def __init__(self, message='掃描器已經到內容尾端了') -> None:
-        super().__init__(message)
-
-
-class UnExceptedTokenError(Exception):
-    def __init__(self, unexpected: 'UnExceptedToken', content, message=None) -> None:
-        super().__init__('預期 {} 但沒有遇到符合的內容 \n{}\n{}^'.format(repr(unexpected.expected),
-                                                             content.split('\n')[unexpected.line - 1],
-                                                             ' ' * (unexpected.position - 1)) + (
-                             '，' + message if message is not None else ''))
-
-
-UnExceptedToken = NamedTuple('UnExceptedToken', (('expected', str), ('line', int), ('position', int)))
 
 
 class BNFScanner:
@@ -147,7 +161,7 @@ class BNFScanner:
 
     def is_next(self, request, re_mode=False):
         if self.is_end():
-            raise ContextEndedError()
+            raise ContextEndedError(request)
         if re_mode is False:
             request = re.escape(request)
         # else:
@@ -163,7 +177,7 @@ class BNFScanner:
 
     def get_next(self, request, re_mode=False):
         if self.is_end():
-            raise ContextEndedError()
+            raise ContextEndedError(request)
         if re_mode is False:
             request = re.escape(request)
         # else:

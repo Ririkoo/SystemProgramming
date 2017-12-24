@@ -4,7 +4,7 @@ from typing import List, Union, Dict
 from processlib.BNF import RuleType, ModifierType, BNFBaseRule, BNFRule
 from processlib.Scanner import Scanner, BNFScanner, ContextEndedError, UnExceptedTokenError
 from processlib.Token import TokenType, ScannerToken
-from processlib.Tools import TreeTools, BNFTools
+from processlib.Tools import TreeTools
 from processlib.Tree import Tree
 
 c0_ebnf = '''
@@ -135,7 +135,7 @@ class Parser:
 
 class ParseError(Exception):
 
-    def __init__(self, unexpected:UnExceptedTokenError) -> None:
+    def __init__(self, unexpected: UnExceptedTokenError) -> None:
         super().__init__(str(unexpected) + '\n已經無法回溯，解析失敗')
 
 
@@ -143,6 +143,7 @@ class BNFParser:
 
     def __init__(self, bnf_rules, scanner: BNFScanner, enter_point: str) -> None:
         super().__init__()
+        self.last_unexpected_error = None
         self.rules: Dict[str, BNFRule] = self.bnf_parse(bnf_rules)
         self.scanner: BNFScanner = scanner
         self.enter_point: str = enter_point
@@ -246,11 +247,13 @@ class BNFParser:
 
     def parse(self, code):
         self.scanner.set(content=code)
-        return self.parse_tree(self.rules[self.enter_point])
+        result = self.parse_tree(self.rules[self.enter_point])
+        if not self.scanner.is_end():
+            raise self.last_unexpected_error
+        return result
 
     def parse_tree(self, rule: BNFRule):
         tree = Tree(rule.name)
-        last_unexpected = None
         for sub_rule in rule.sub_rules:
             first_try = True
             next_sub = False
@@ -258,7 +261,7 @@ class BNFParser:
                 try:
                     if token.modifier is ModifierType.none:
                         result = self.get_token(token)
-                        tree.append(result)
+                        tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
                     elif token.modifier is ModifierType.repeat_what_ever:
                         while True:
                             try:
@@ -269,17 +272,17 @@ class BNFParser:
                             if result is None:
                                 break
                             else:
-                                tree.append(result)
+                                tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
                     elif token.modifier is ModifierType.repeat_once_or_nothing_happened:
                         try:
                             result = self.try_get_token(token)
                         except ContextEndedError:
                             result = None
                         if result is not None:
-                            tree.append(result)
+                            tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
                     elif token.modifier is ModifierType.repeat_more_than_once:
                         result = self.get_token(token)
-                        tree.append(result)
+                        tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
                         while True:
                             try:
                                 result = self.try_get_token(token)
@@ -288,9 +291,9 @@ class BNFParser:
                             if result is None:
                                 break
                             else:
-                                tree.append(result)
-                except UnExceptedTokenError as e:
-                    last_unexpected = e
+                                tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
+                except (UnExceptedTokenError, ContextEndedError) as e:
+                    self.last_unexpected_error = e
                     if first_try is True:
                         next_sub = True
                         break
@@ -303,7 +306,7 @@ class BNFParser:
                 continue
 
             return tree
-        raise last_unexpected
+        raise self.last_unexpected_error
 
     def get_token(self, token) -> Union[Tree, ScannerToken]:
         result = None
@@ -319,7 +322,8 @@ class BNFParser:
             return None
         if isinstance(result, Tree) and len(result.children) == 1 and \
                 isinstance(result.children[0], ScannerToken) and \
-                result.children[0].type is None:
+                result.children[0].type is None and \
+                'internal' not in result.name:
             return result.children[0]._replace(type=result.name)
         return result
 
@@ -330,10 +334,13 @@ class BNFParser:
             pass
         return None
 
+    def process_internal_node(self):
+        pass
+
 
 if __name__ == '__main__':
     bnf_parser = BNFParser(c0_ebnf, BNFScanner(), 'PROG')
-    BNFTools.dump_rules_str(bnf_parser.rules)
+    # BNFTools.dump_rules_str(bnf_parser.rules)
     progs = ['''sum = 0;
 for (i=1; i<=9; i++)
 {
@@ -343,6 +350,7 @@ for (i=1; i<=9; i++)
     sum = sum + p;
   }
 }
+
 return sum;
 ''', '''a = 1;
 b = 2;
@@ -352,8 +360,8 @@ for (i=0; i<=10; i++)
 {
   p = i * i;
   sum = sum + p;
-};
-return sum;
+}
+return sum
 ''']
     for prog in progs:
         print(prog)
