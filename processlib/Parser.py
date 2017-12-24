@@ -141,7 +141,7 @@ class ParseError(Exception):
 
 class BNFParser:
 
-    def __init__(self, bnf_rules, scanner: BNFScanner, enter_point: str) -> None:
+    def __init__(self, bnf_rules, enter_point: str, scanner: BNFScanner) -> None:
         super().__init__()
         self.last_unexpected_error = None
         self.rules: Dict[str, BNFRule] = self.bnf_parse(bnf_rules)
@@ -339,7 +339,7 @@ class BNFParser:
 
 
 if __name__ == '__main__':
-    bnf_parser = BNFParser(c0_ebnf, BNFScanner(), 'PROG')
+    bnf_parser = BNFParser(c0_ebnf, 'PROG', BNFScanner())
     # BNFTools.dump_rules_str(bnf_parser.rules)
     progs = ['''sum = 0;
 for (i=1; i<=9; i++)
