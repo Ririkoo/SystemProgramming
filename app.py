@@ -20,7 +20,7 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 # parser
 SAnalyser = SemanticAnalyser(BNFParser(c0_ebnf, 'PROG', BNFScanner()))
-SAnalyser = SemanticAnalyser(Parser(Scanner()))
+# SAnalyser = SemanticAnalyser(Parser(Scanner()))
 
 
 @app.route('/')
