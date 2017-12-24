@@ -35,6 +35,7 @@ def index():
 
 @app.route('/parse', methods=['POST'])
 def add_entry():
+    global bnf_rules
     c0_code = request.form['text']
     bnf_rules = request.form['bnf'].strip() or c0_ebnf
     # flash(bnf_rules, 'bnf_editor')
