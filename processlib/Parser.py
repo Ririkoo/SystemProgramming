@@ -34,6 +34,24 @@ id = [A-Za-z_][A-Za-z0-9_]*
 number = [0-9]+
 string = '"' [A-Za-z0-9_]* '"'
 '''
+c0_ebnf_improved2 = '''
+PROG = BaseList
+BaseList = (BASE)*
+BASE = FOR | STMT END 
+END = ';'
+FOR = 'for' '(' STMT END  COND END  STMT ')' BLOCK
+STMT = 'return' id | id ('=' EXP | UnaryOP))
+UnaryOP =  '++'|'--'
+BLOCK = '{' BaseList '}'
+EXP = ITEM (OP  ITEM)*
+OP = [+\-*/]
+COND = EXP CondOP EXP
+CondOP = '=='|'!='|'<='|'>='|'<'|'>'
+ITEM = id | number | string
+id = [A-Za-z_][A-Za-z0-9_]*
+number = [0-9]+
+string = '"' [A-Za-z0-9_]* '"'
+'''
 
 class Parser:
 
