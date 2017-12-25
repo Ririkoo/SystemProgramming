@@ -20,3 +20,23 @@ $(function () {
     });
 
 });
+
+CodeMirror.fromTextArea($('textarea[name=text]')[0], {
+    mode: "text/x-csrc",
+    styleActiveLine: true,
+    matchBrackets: true,
+    theme: 'seti',
+    lineNumbers: true
+
+    // value: 'test',
+});
+
+CodeMirror.fromTextArea($('textarea[name=bnf]')[0], {
+    styleActiveLine: true,
+    lineNumbers: true,
+    theme: 'seti',
+    mode:'text/x-ebnf'
+//     readOnly:false,
+//     value: 'test',
+//     mode: "clike",
+});
