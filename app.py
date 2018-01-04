@@ -19,12 +19,24 @@ SECRET_KEY = 'mkz75asklLd8wdA9'
 app = Flask(__name__)
 app.config.from_object(__name__)
 
+default_code = '''sum = 0;
+for (i=1; i<=9; i++)
+{
+  for (j=1; j<=9; j++)
+  {
+    p = i * j;
+    sum = sum + p;
+  }
+}
 
+return sum;
+'''
 
 
 @app.route('/')
 def index():
     flash(c0_ebnf, 'bnf_editor')
+    flash(default_code, 'editor')
     return render_template('index.html')
 
 
