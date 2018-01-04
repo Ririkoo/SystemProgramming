@@ -134,7 +134,7 @@ class BNFScanner:
                 return
             # 處理空格與換行
             while True:
-                find = re.match('(\n+)|(\r+)|( +)', content)
+                find = re.match('(\n)|(\r)|( +)', content)
                 if find is None:
                     break
 
