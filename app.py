@@ -1,8 +1,7 @@
 import os
 import traceback
 
-from flask import Flask, request, redirect, url_for, \
-    render_template, flash, Markup, jsonify
+from flask import Flask, request, render_template, flash, jsonify
 
 import processlib.Tools as Tools
 from processlib.Parser import BNFParser, c0_ebnf
@@ -47,12 +46,12 @@ def add_entry():
     bnf_rules = request.form['bnf'].strip() or c0_ebnf
     s_analyser = SemanticAnalyser(BNFParser(bnf_rules, 'PROG', BNFScanner()))
     try:
-        parser_res = TreeTools.dump_html_code(s_analyser.parse(c0_code))
-        return jsonify(parser_res)
+        parser_res = s_analyser.parse(c0_code)
+        return jsonify(parser_res.serialize())
 
     except Exception as e:
-        return jsonify(Tools.dump_to_html(str(e)))
         traceback.print_exc()
+        return jsonify({'error': Tools.dump_to_html(str(e))})
 
 
 if __name__ == '__main__':
