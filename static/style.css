@@ -23,6 +23,10 @@ h1, h2 {
     font-weight: bolder;
 }
 
+.emulator{
+    margin: 10px;
+}
+
 .CodeMirror { height: auto; border: 1px solid #ddd;margin: 1px }
 .CodeMirror-scroll { max-height: 500px; }
 .CodeMirror pre { padding-left: 7px; line-height: 1.25; }
