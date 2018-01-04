@@ -34,7 +34,8 @@ $(function () {
                 output.html(data['error']);
             else {
                 let asm_code = GetAssemblerCode(data);
-                output.text(JSON.stringify(asm_code, null, 2) + '\n' + JSON.stringify(data, null, 2));
+                output.text(JSON.stringify(data, null, 2));
+                drawGraph(data);
                 emulator = new Enulator(asm_code);
                 let step = $("#step");
                 step.off('click');
@@ -179,7 +180,48 @@ class Enulator {
         emulatorCode.find('tr[data-line-num!=' + line + '] >td:first-child').text('　');
     }
 }
-
+function drawGraph(jsondata){
+    var myChart = echarts.init(document.getElementById('visgraph'));
+    var tmpStrJson = JSON.stringify(jsondata);
+    tmpStrJson = tmpStrJson.replace(/value/g,'name')
+    var reJson=JSON.parse(tmpStrJson);
+    var option = {
+        tooltip: {
+        trigger: 'item',
+        triggerOn: 'mousemove'
+    },
+    series: [{
+        type: 'tree',
+        data: [reJson],
+        top: '1%',
+        left: '7%',
+        bottom: '1%',
+        right: '20%',
+        symbolSize: 7,
+        label: {
+            normal: {
+                position: 'left',
+                verticalAlign: 'middle',
+                align: 'right',
+                fontSize: 9
+            }
+        },
+        leaves: {
+            label: {
+                normal: {
+                    position: 'right',
+                    verticalAlign: 'middle',
+                    align: 'left'
+                }
+            }
+        },
+            expandAndCollapse: true,
+            animationDuration: 550,
+            animationDurationUpdate: 750
+        }]
+    };
+        myChart.setOption(option);  
+}
 function ForEachNode(tree, cb) {
     for (let child of tree.children) {
         if (child.children !== undefined) {

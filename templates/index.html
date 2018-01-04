@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="{{url_for('static', filename='bootstrap.min.css') }}">
     <link rel="stylesheet" href="{{url_for('static', filename='style.css') }}">
     <script src="{{url_for('static', filename='codemirror.js') }}"></script>
+    <script src="{{url_for('static', filename='echarts.js') }}"></script>
     <link rel="stylesheet" href="{{url_for('static', filename='CodeMirror_5_33_0/theme/seti.css') }}">
     <link rel="stylesheet" href="{{url_for('static', filename='codemirror.css') }}">
     <script src="{{url_for('static', filename='CodeMirror_5_33_0/mode/clike/clike.js') }}"></script>
@@ -53,6 +54,9 @@
         <div class="span6">
             <pre id="output" class="flash"></pre>
         </div>
+
+        <div id="visgraph" style="width: 1280px;height:720px;"></div>
+
     </div>
 </div>
 <script src="{{url_for('static', filename='jquery-1.10.2.min.js') }}"></script>
