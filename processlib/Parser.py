@@ -292,7 +292,7 @@ class BNFParser:
                 try:
                     if token.modifier is ModifierType.none:
                         result = self.get_token(token)
-                        tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
+                        tree.append(result, concat=token.type is RuleType.link and self.rules[token.content].type is RuleType.internal)
                     elif token.modifier is ModifierType.repeat_what_ever:
                         while True:
                             try:
@@ -303,17 +303,17 @@ class BNFParser:
                             if result is None:
                                 break
                             else:
-                                tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
+                                tree.append(result, concat=token.type is RuleType.link and self.rules[token.content].type is RuleType.internal)
                     elif token.modifier is ModifierType.repeat_once_or_nothing_happened:
                         try:
                             result = self.try_get_token(token)
                         except ContextEndedError:
                             result = None
                         if result is not None:
-                            tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
+                            tree.append(result, concat=token.type is RuleType.link and self.rules[token.content].type is RuleType.internal)
                     elif token.modifier is ModifierType.repeat_more_than_once:
                         result = self.get_token(token)
-                        tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
+                        tree.append(result, concat=token.type is RuleType.link and self.rules[token.content].type is RuleType.internal)
                         while True:
                             try:
                                 result = self.try_get_token(token)
@@ -322,7 +322,7 @@ class BNFParser:
                             if result is None:
                                 break
                             else:
-                                tree.append(result, concat=isinstance(result, Tree) and 'internal' in result.name)
+                                tree.append(result, concat=token.type is RuleType.link and self.rules[token.content].type is RuleType.internal)
                 except (UnExceptedTokenError, ContextEndedError) as e:
                     self.last_unexpected_error = e
                     if first_try is True:
