@@ -2,8 +2,6 @@
 /npm-debug.log
 /test*.html
 .tern-*
-*~
 *.swp
 .idea
 *.iml
-/lib/codemirror.js
