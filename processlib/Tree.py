@@ -16,3 +16,9 @@ class Tree:
         else:
             self.children.append(child_tree)
         return self
+
+    def serialize(self):
+        return {
+            'name': self.name,
+            'children': [child.serialize() if isinstance(child, Tree) else child for child in self.children]
+        }

@@ -29,7 +29,10 @@ $(function () {
                 bnf: $('#bnf').val()
             }
         }).done(function (data) {
-            $('#output').html(data)
+            if (data['error'] !== undefined)
+                $('#output').html(data['error']);
+            else
+                $('#output').text(JSON.stringify(data, null, 2))
         });
     });
 
