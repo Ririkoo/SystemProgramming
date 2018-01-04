@@ -18,25 +18,40 @@ $(function () {
             }
         });
     });
+    $('#submit_data').on('click', function (event) {
+        text_edior.save();
+        bnf_edior.save();
+        $.ajax({
+            url: "parse",
+            method: 'post',
+            data: {
+                text: $('#text').val(),
+                bnf: $('#bnf').val()
+            }
+        }).done(function (data) {
+            $('#output').html(data)
+        });
+    });
 
-});
+    var text_edior = CodeMirror.fromTextArea($('#text')[0], {
+        mode: "text/x-csrc",
+        styleActiveLine: true,
+        matchBrackets: true,
+        theme: 'seti',
+        lineNumbers: true
 
-CodeMirror.fromTextArea($('textarea[name=text]')[0], {
-    mode: "text/x-csrc",
-    styleActiveLine: true,
-    matchBrackets: true,
-    theme: 'seti',
-    lineNumbers: true
+        // value: 'test',
+    });
 
-    // value: 'test',
-});
-
-CodeMirror.fromTextArea($('textarea[name=bnf]')[0], {
-    styleActiveLine: true,
-    lineNumbers: true,
-    theme: 'seti',
-    mode:'text/x-ebnf'
+    var bnf_edior = CodeMirror.fromTextArea($('#bnf')[0], {
+        styleActiveLine: true,
+        lineNumbers: true,
+        theme: 'seti',
+        mode: 'text/x-ebnf'
 //     readOnly:false,
 //     value: 'test',
 //     mode: "clike",
+    });
+
 });
+

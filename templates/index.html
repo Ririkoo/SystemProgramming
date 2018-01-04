@@ -24,26 +24,20 @@
             <form action="{{ url_for('add_entry') }}" method="post" class="add-entry form-group">
                 <div class="row">
                     <div class="col-sm-5"><a>C0 Codes:</a><br>
-                        <textarea name="text" rows="20" cols="50" class="form-control">{% with editor = get_flashed_messages(category_filter=["editor"]) %}{% if editor %}{% for message in editor %}{{ message }}{% endfor %}{% endif %}{% endwith %}</textarea>
+                        <textarea id="text" rows="20" cols="50" class="form-control">{% with editor = get_flashed_messages(category_filter=["editor"]) %}{% if editor %}{% for message in editor %}{{ message }}{% endfor %}{% endif %}{% endwith %}</textarea>
                     </div>
                     <div class="col-sm-6">
                         <a>BNF Rules:</a><br>
-                        <textarea name="bnf" rows="20" cols="80" class="form-control">{% with editor = get_flashed_messages(category_filter=["bnf_editor"]) %}{% if editor %}{% for message in editor %}{{ message }}{% endfor %}{% endif %}{% endwith %}</textarea>
+                        <textarea id="bnf" rows="20" cols="80" class="form-control">{% with editor = get_flashed_messages(category_filter=["bnf_editor"]) %}{% if editor %}{% for message in editor %}{{ message }}{% endfor %}{% endif %}{% endwith %}</textarea>
                     </div>
                 </div>
                 <br><br>
-                <input type="submit" class="btn btn-primary" value="Submit">
+                <input type="button" id="submit_data" class="btn btn-primary" value="Submit">
             </form>
         </div>
 
         <div class="span6">
-            {% with output = get_flashed_messages(category_filter=["output"]) %}
-            {% if output %}
-            {% for message in output %}
-            <div class="flash">{{ message }}</div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
+            <div id="output" class="flash">{{ message }}</div>
         </div>
     </div>
 </div>
