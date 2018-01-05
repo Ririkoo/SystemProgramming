@@ -43,7 +43,8 @@ $(function () {
                 drawGraph(data);
                 output.text(JSON.stringify(data, null, 2));
                 let asm_code = GetAssemblerCode(data);
-                output.text(JSON.stringify(asm_code, null, 2) + '\n' + output.text());
+                generateAsmCode(asm_code);
+                output.text(output.text());
 
 
                 emulator = new Enulator(asm_code);
@@ -223,7 +224,7 @@ class Enulator {
     }
 
     renderVaraibleTable() {
-        let html = '<table cellpadding="3px" cellspacing="5px" border="1px" ><tr><th>名稱</th><th>內容</th></th>';
+        let html = '<table class="table table-bordered table-sm" ><tr><th>名稱</th><th>內容</th></th>';
         for (let name in this.variables) {
             html += '<tr>';
             html += '<td>' + name + '</td>';
@@ -231,6 +232,7 @@ class Enulator {
             html += '</tr>';
 
         }
+        html +='<tr><td>[compareResult]</td><td>'+this.compareResult+'</td></tr>'
         html += '</table>';
         $('#variableTable').html(html);
     }
@@ -259,6 +261,28 @@ class Enulator {
         emulatorCode.find('tr[data-line-num=' + line + '] >td:first-child').text('>');
         emulatorCode.find('tr[data-line-num!=' + line + '] >td:first-child').text('　');
     }
+}
+
+function generateAsmCode(asm) {
+    html = '<tr><th>index</th><th>op</th><th>p1</th><th>p2</th><th>id</th><th>to</th></tr>';
+    for (let code of asm) {
+        html += '<tr>';
+        html += '<td>' + normailze(code.index) + '</td>';
+        html += '<td>' + normailze(code.op) + '</td>';
+        html += '<td>' + normailze(code.p1) + '</td>';
+        html += '<td>' + normailze(code.p2) + '</td>';
+        html += '<td>' + normailze(code.id) + '</td>';
+        html += '<td>' + normailze(code.to) + '</td>';
+        html += '</tr>';
+
+    }
+    $('#asm_code').html(html);
+}
+
+function normailze(obj) {
+    if (obj === undefined)
+        return '';
+    return JSON.stringify(obj);
 }
 
 function drawGraph(jsondata) {
@@ -321,7 +345,7 @@ function ForEachNode(tree, cb) {
 
 function GetAssemblerCode(tree) {
     asm = [];
-    asm.push({op: 'create', id: '_temp', line: 1});
+    asm.push({op: 'create', id: '[temp]', line: 1});
     // children
     ForEachNode(tree, handleCodeProcess(asm));
 
@@ -352,10 +376,10 @@ function ProcessSTMT(node, code) {
 
     } else if (node.children[1].value === '=') {
         code.push({op: 'create', id: node.children[0].value, line: line});
-        code.push({op: 'push', id: '_temp', line: line});
+        code.push({op: 'push', id: '[temp]', line: line});
         ProcessEXP(node.children[2], code);
-        code.push({op: 'mov', p1: {type: 'id', value: '_temp'}, to: node.children[0].value, line: line});
-        code.push({op: 'pop', id: '_temp', line: line});
+        code.push({op: 'mov', p1: {type: 'id', value: '[temp]'}, to: node.children[0].value, line: line});
+        code.push({op: 'pop', id: '[temp]', line: line});
     } else {
         if (node.children[1].value == '++')
             code.push({
@@ -390,26 +414,26 @@ function ProcessFor(node, code) {
 
 function ProcessCOND(node, code) {
     let line = node.children[1].line;
-    code.push({op: 'push', id: '_temp', line: line});
+    code.push({op: 'push', id: '[temp]', line: line});
     ProcessEXP(node.children[0], code);
 
-    code.push({op: 'push', id: '_temp', line: line});
+    code.push({op: 'push', id: '[temp]', line: line});
     ProcessEXP(node.children[2], code);
-    code.push({op: 'create', id: '_temp2', line: line});
+    code.push({op: 'create', id: '[temp2]', line: line});
     code.push({
         op: 'mov',
-        p1: {type: 'id', value: '_temp'},
-        to: '_temp2',
+        p1: {type: 'id', value: '[temp]'},
+        to: '[temp2]',
         line: line
     });
-    code.push({op: 'pop', id: '_temp', line: line});
+    code.push({op: 'pop', id: '[temp]', line: line});
     code.push({
         op: 'cmp',
-        p1: {type: 'id', value: '_temp'},
-        p2: {type: 'id', value: '_temp2'},
+        p1: {type: 'id', value: '[temp]'},
+        p2: {type: 'id', value: '[temp2]'},
         line: line
     });
-    code.push({op: 'pop', id: '_temp', line: line});
+    code.push({op: 'pop', id: '[temp]', line: line});
     switch (node.children[1].value) {
         case '==':
             code.push({op: 'jeq', to: null, line: line});
@@ -444,7 +468,7 @@ function ProcessEXP(node, code) {
             code.push({
                 op: 'mov',
                 p1: {type: child.children[0].type, value: child.children[0].value},
-                to: '_temp',
+                to: '[temp]',
                 line: line
             });
         else if (child.value !== undefined) {
@@ -454,36 +478,36 @@ function ProcessEXP(node, code) {
                 case '+':
                     code.push({
                         op: 'add',
-                        p1: {type: 'id', value: '_temp'},
+                        p1: {type: 'id', value: '[temp]'},
                         p2: {type: child.children[0].type, value: child.children[0].value},
-                        to: '_temp',
+                        to: '[temp]',
                         line: line
                     });
                     break;
                 case '-':
                     code.push({
                         op: 'sub',
-                        p1: {type: 'id', value: '_temp'},
+                        p1: {type: 'id', value: '[temp]'},
                         p2: {type: child.children[0].type, value: child.children[0].value},
-                        to: '_temp',
+                        to: '[temp]',
                         line: line
                     });
                     break;
                 case '*':
                     code.push({
                         op: 'mul',
-                        p1: {type: 'id', value: '_temp'},
+                        p1: {type: 'id', value: '[temp]'},
                         p2: {type: child.children[0].type, value: child.children[0].value},
-                        to: '_temp',
+                        to: '[temp]',
                         line: line
                     });
                     break;
                 case '/':
                     code.push({
                         op: 'div',
-                        p1: {type: 'id', value: '_temp'},
+                        p1: {type: 'id', value: '[temp]'},
                         p2: {type: child.children[0].type, value: child.children[0].value},
-                        to: '_temp',
+                        to: '[temp]',
                         line: line
                     });
                     break;
