@@ -18,6 +18,84 @@ $(function () {
             }
         });
     });
+
+    let codes = {
+        'for2': `sum = 0;
+for (i=1; i<=9; i++)
+{
+  for (j=1; j<=9; j++)
+  {
+    p = i * j;
+    sum = sum + p;
+  }
+}
+return sum;`
+        , 'simple': `a = 1;
+b = 2;
+c = a + b;
+return c;`
+        , 'square_sum': `sum = 0;
+for (i=0; i<=10; i++)
+{
+  p = i * i;
+  sum = sum + p;
+};
+return sum;
+`
+    };
+
+    let rules = {
+        'basic': `PROG = BaseList
+BaseList = (BASE)*
+BASE = FOR | STMT ';'
+FOR = 'for' '(' STMT ';' COND ';' STMT ')' BLOCK
+STMT = 'return' id | id ('=' EXP |  ('++'|'--'))
+BLOCK = '{' BaseList '}'
+EXP = ITEM ([+\\-*/] ITEM)?
+COND = EXP ('=='|'!='|'<='|'>='|'<'|'>') EXP
+ITEM = id | number
+id = [A-Za-z_][A-Za-z0-9_]*
+number = [0-9]+`,
+        'improved1': `PROG = BaseList
+BaseList = (BASE)*
+BASE = FOR | STMT ';'
+FOR = 'for' '(' STMT ';' COND ';' STMT ')' BLOCK
+STMT = 'return' id | id ('=' EXP |  ('++'|'--'))
+BLOCK = '{' BaseList '}'
+EXP = ITEM ([+\\-*/] ITEM)*
+COND = EXP ('=='|'!='|'<='|'>='|'<'|'>') EXP
+ITEM = id | number | string
+id = [A-Za-z_][A-Za-z0-9_]*
+number = [0-9]+
+string = '"' [A-Za-z0-9_]* '"'`,
+        'improved2': `PROG = BaseList
+BaseList = (BASE)*
+BASE = FOR | STMT END 
+END = ';'
+FOR = 'for' '(' STMT END  COND END  STMT ')' BLOCK
+STMT = 'return' id | id ('=' EXP | UnaryOP))
+UnaryOP =  '++'|'--'
+BLOCK = '{' BaseList '}'
+EXP = ITEM (OP  ITEM)*
+OP = [+\\-*/]
+COND = EXP CondOP EXP
+CondOP = '=='|'!='|'<='|'>='|'<'|'>'
+ITEM = id | number | string
+id = [A-Za-z_][A-Za-z0-9_]*
+number = [0-9]+
+string = '"' [A-Za-z0-9_]* '"'
+`
+    };
+
+    $('#code_select').on('change', function () {
+        text_editor.getDoc().setValue(codes[$(this).val()]);
+    });
+
+
+    $('#bnf_select').on('change', function () {
+        bnf_editor.getDoc().setValue(rules[$(this).val()]);
+    });
+
     let interval = null;
     let $autoStep = $("#autostep");
     let $step = $("#step");
