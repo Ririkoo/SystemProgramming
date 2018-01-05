@@ -224,7 +224,7 @@ class Enulator {
     }
 
     renderVaraibleTable() {
-        let html = '<table class="table table-bordered table-sm" ><tr><th>名稱</th><th>內容</th></th>';
+        let html = '<table class="table table-bordered table-sm"><tr><th>名稱</th><th>內容</th></th>';
         for (let name in this.variables) {
             html += '<tr>';
             html += '<td>' + name + '</td>';
