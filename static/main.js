@@ -33,9 +33,9 @@ $(function () {
             if (data['error'] !== undefined)
                 output.html(data['error']);
             else {
-                let asm_code = GetAssemblerCode(data);
-                output.text(JSON.stringify(data, null, 2));
                 drawGraph(data);
+                output.text(JSON.stringify(data, null, 2));
+                let asm_code = GetAssemblerCode(data);
                 emulator = new Enulator(asm_code);
                 let step = $("#step");
                 step.off('click');
