@@ -232,7 +232,7 @@ class Enulator {
             html += '</tr>';
 
         }
-        html +='<tr><td>[compareResult]</td><td>'+this.compareResult+'</td></tr>'
+        html += '<tr><td>[compareResult]</td><td>' + this.compareResult + '</td></tr>'
         html += '</table>';
         $('#variableTable').html(html);
     }
@@ -294,7 +294,11 @@ function drawGraph(jsondata) {
     var option = {
         tooltip: {
             trigger: 'item',
-            triggerOn: 'mousemove'
+            triggerOn: 'mousemove',
+            formatter: function (data) {
+                data = data.data;
+                return '<b>'+data.name + '</b><br/>' + (data.type !== undefined ? ((data.type?('type:'+JSON.stringify(data.type) + '<br>'):'')+(data.name?('value:'+JSON.stringify(data.name) + '<br>'):'')+(data.kind?('kind:'+JSON.stringify(data.kind) + '<br>'):'') ) : '');
+            }
         },
         series: [{
             type: 'tree',
