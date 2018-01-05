@@ -36,12 +36,32 @@ $(function () {
                 drawGraph(data);
                 output.text(JSON.stringify(data, null, 2));
                 let asm_code = GetAssemblerCode(data);
+                output.text(JSON.stringify(asm_code, null, 2) + '\n' + output.text());
+
+
                 emulator = new Enulator(asm_code);
                 let step = $("#step");
                 step.off('click');
                 step.on('click', function () {
                     emulator.step();
                 });
+                let autostep = $("#autostep");
+                autostep.off('click');
+                let interval = null;
+                autostep.on('click', function () {
+                    if (interval !== null) {
+                        clearInterval(interval);
+                        $(this).val('autostep disable');
+                        interval = null;
+                        return;
+                    }
+                    interval = setInterval(function () {
+                        emulator.step();
+                    }, parseInt($('#autostep_interval').val()));
+                    $(this).val('autostep enable')
+                });
+
+
                 emulator.generateEmulatorCodeBlock($('#text').val())
             }
         });
@@ -76,20 +96,36 @@ class Enulator {
         this.codes = asm_code;
         this.line_number = 0;
         this.variables = {};
-        this.stack = [];
+        this.stack = {};
         this.renderVaraibleTable();
-        this.result=null;
-         $('#return').text('');
+        this.result = null;
+        this.compareResult = 0;
+        this.asm_index = 0;
+
+        $('#return').text('');
     }
 
     step() {
         if (this.line_number < 0)
             return;
-        this.line_number++;
-        for (let code of this.codes) {
-            if (code.line == this.line_number) {
-                this.handleCode(code);
+        // let code = this.codes[this.asm_index];
+        // this.line_number = code.line;
+        let firstFlag = true;
+        while (true) {
+            // console.log(this.asm_index);
+            let code = this.codes[this.asm_index];
+            if (code === undefined) {
+                this.end();
+                return;
             }
+            if (firstFlag) {
+                this.line_number = code.line;
+                firstFlag = false;
+            }
+            if (code.line !== this.line_number)
+                break;
+            this.asm_index++;
+            this.handleCode(code);
         }
         this.tagLine(this.line_number);
         this.renderVaraibleTable();
@@ -98,13 +134,16 @@ class Enulator {
     handleCode(code) {
         switch (code.op) {
             case'create':
-                this.variables[code.id] = 0;
+                if (this.variables[code.id] === undefined)
+                    this.variables[code.id] = 0;
                 break;
             case'push':
-                this.stack.push(this.getValue(code.p1));
+                if (this.stack[code.id] === undefined)
+                    this.stack[code.id] = [];
+                this.stack[code.id].push(this.variables[code.id]);
                 break;
             case'pop':
-                this.variables[code.id] = this.stack.pop();
+                this.variables[code.id] = this.stack[code.id].pop();
                 break;
             case'mov':
                 this.variables[code.to] = this.getValue(code.p1);
@@ -125,6 +164,36 @@ class Enulator {
                 this.result = this.getValue(code.p1);
                 this.end();
                 break;
+            case 'cmp':
+                this.compareResult = this.getValue(code.p1) - this.getValue(code.p2);
+                break;
+            case 'jmp':
+                this.asm_index = code.to;
+                break;
+            case 'jeq'://'=='
+                if (this.compareResult === 0)
+                    this.asm_index = code.to;
+                break;
+            case 'jne'://'!='
+                if (this.compareResult !== 0)
+                    this.asm_index = code.to;
+                break;
+            case 'jb'://'>'
+                if (this.compareResult > 0)
+                    this.asm_index = code.to;
+                break;
+            case 'jl'://'<'
+                if (this.compareResult < 0)
+                    this.asm_index = code.to;
+                break;
+            case 'jbe'://'>='
+                if (this.compareResult > 0 || this.compareResult === 0)
+                    this.asm_index = code.to;
+                break;
+            case 'jle'://'<='
+                if (this.compareResult < 0 || this.compareResult === 0)
+                    this.asm_index = code.to;
+                break;
             default:
                 throw new Error('不應該會抵達這裡');
         }
@@ -133,13 +202,17 @@ class Enulator {
     getValue(p) {
         if (p.type === 'id') {
             return this.variables[p.value]
+        } else if (p.type === 'number') {
+            return parseFloat(p.value);
         } else
             return p.value
     }
 
     end() {
-        this.line_number = -1;
         $('#return').text(this.result);
+        // this.line_number = -1;
+        this.tagLine(this.line_number);
+        this.renderVaraibleTable();
     }
 
     renderVaraibleTable() {
@@ -180,54 +253,57 @@ class Enulator {
         emulatorCode.find('tr[data-line-num!=' + line + '] >td:first-child').text('　');
     }
 }
-function drawGraph(jsondata){
+
+function drawGraph(jsondata) {
     var myChart = echarts.init(document.getElementById('visgraph'));
     myChart.clear();
     var tmpStrJson = JSON.stringify(jsondata);
-    tmpStrJson = tmpStrJson.replace(/value/g,'name')
-    var reJson=JSON.parse(tmpStrJson);
+    tmpStrJson = tmpStrJson.replace(/value/g, 'name');
+    var reJson = JSON.parse(tmpStrJson);
     var option = {
         tooltip: {
-        trigger: 'item',
-        triggerOn: 'mousemove'
-    },
-    series: [{
-        type: 'tree',
-        data: [reJson],
-        top: '1%',
-        left: '7%',
-        bottom: '1%',
-        right: '20%',
-        symbolSize: 7,
-        label: {
-            normal: {
-                position: 'left',
-                verticalAlign: 'middle',
-                align: 'right',
-                fontSize: 9
-            }
+            trigger: 'item',
+            triggerOn: 'mousemove'
         },
-        leaves: {
+        series: [{
+            type: 'tree',
+            data: [reJson],
+            top: '1%',
+            left: '7%',
+            bottom: '1%',
+            right: '20%',
+            symbolSize: 7,
             label: {
                 normal: {
-                    position: 'right',
+                    position: 'left',
                     verticalAlign: 'middle',
-                    align: 'left'
+                    align: 'right',
+                    fontSize: 9
                 }
-            }
-        },
+            },
+            leaves: {
+                label: {
+                    normal: {
+                        position: 'right',
+                        verticalAlign: 'middle',
+                        align: 'left'
+                    }
+                }
+            },
             expandAndCollapse: true,
             animationDuration: 550,
             animationDurationUpdate: 750
         }]
     };
-        myChart.setOption(option);  
+    myChart.setOption(option);
 }
+
 function ForEachNode(tree, cb) {
     for (let child of tree.children) {
         if (child.children !== undefined) {
-            cb(child);
-            ForEachNode(child, cb);
+            let result = cb(child);
+            if (!result)
+                ForEachNode(child, cb);
         } else {
             if (child.type === 'number')
                 child.value = parseInt(child.value);
@@ -240,14 +316,27 @@ function GetAssemblerCode(tree) {
     asm = [];
     asm.push({op: 'create', id: '_temp', line: 1});
     // children
-    ForEachNode(tree, function (node) {
-        if (node.name === 'STMT')
-            ProcessSTMT(node, asm)
-    });
+    ForEachNode(tree, handleCodeProcess(asm));
 
+    for (let i = 0; i < asm.length; i++) {
+        asm[i].index = i;
+    }
     return asm;
 }
 
+function handleCodeProcess(asm) {
+    return function (node) {
+        if (node.name === 'STMT') {
+            ProcessSTMT(node, asm);
+            return true;
+        } else if (node.name === 'FOR') {
+            ProcessFor(node, asm);
+            return true;
+        }
+        return false;
+    }
+
+}
 
 function ProcessSTMT(node, code) {
     let line = node.children[0].line;
@@ -256,13 +345,89 @@ function ProcessSTMT(node, code) {
 
     } else if (node.children[1].value === '=') {
         code.push({op: 'create', id: node.children[0].value, line: line});
-        code.push({op: 'push', p1: {type: 'id', value: '_temp'}, line: line});
+        code.push({op: 'push', id: '_temp', line: line});
         ProcessEXP(node.children[2], code);
         code.push({op: 'mov', p1: {type: 'id', value: '_temp'}, to: node.children[0].value, line: line});
         code.push({op: 'pop', id: '_temp', line: line});
+    } else {
+        if (node.children[1].value == '++')
+            code.push({
+                op: 'add',
+                p1: {type: 'id', value: node.children[0].value},
+                p2: {type: 'number', value: 1},
+                to: node.children[0].value,
+                line: line
+            })
     }
 
 }
+
+function ProcessFor(node, code) {
+    let line = node.children[0].line;
+    ProcessSTMT(node.children[2], code);
+    let cond_point = code.length;
+    ProcessCOND(node.children[4], code);
+    code[code.length - 1].to = code.length + 1;
+
+
+    let jmp = {op: 'jmp', to: null, line: line};
+    code.push(jmp);
+
+    ForEachNode(node.children[8], handleCodeProcess(code));
+    ProcessSTMT(node.children[6], code);
+    code.push({op: 'jmp', to: cond_point, line: line});
+    jmp.to = code.length;
+
+
+}
+
+function ProcessCOND(node, code) {
+    let line = node.children[1].line;
+    code.push({op: 'push', id: '_temp', line: line});
+    ProcessEXP(node.children[0], code);
+
+    code.push({op: 'push', id: '_temp', line: line});
+    ProcessEXP(node.children[2], code);
+    code.push({op: 'create', id: '_temp2', line: line});
+    code.push({
+        op: 'mov',
+        p1: {type: 'id', value: '_temp'},
+        to: '_temp2',
+        line: line
+    });
+    code.push({op: 'pop', id: '_temp', line: line});
+    code.push({
+        op: 'cmp',
+        p1: {type: 'id', value: '_temp'},
+        p2: {type: 'id', value: '_temp2'},
+        line: line
+    });
+    code.push({op: 'pop', id: '_temp', line: line});
+    switch (node.children[1].value) {
+        case '==':
+            code.push({op: 'jeq', to: null, line: line});
+            break;
+        case '!=':
+            code.push({op: 'jne', to: null, line: line});
+            break;
+        case '>=':
+            code.push({op: 'jbe', to: null, line: line});
+            break;
+        case '<=':
+            code.push({op: 'jle', to: null, line: line});
+            break;
+        case '>':
+            code.push({op: 'jb', to: null, line: line});
+            break;
+        case '<':
+            code.push({op: 'jl', to: null, line: line});
+            break;
+        default:
+            throw new Error('不應該會抵達這裡');
+    }
+
+}
+
 
 function ProcessEXP(node, code) {
     let line = node.children[0].children[0].line;
