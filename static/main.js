@@ -182,6 +182,7 @@ class Enulator {
 }
 function drawGraph(jsondata){
     var myChart = echarts.init(document.getElementById('visgraph'));
+    myChart.clear();
     var tmpStrJson = JSON.stringify(jsondata);
     tmpStrJson = tmpStrJson.replace(/value/g,'name')
     var reJson=JSON.parse(tmpStrJson);
