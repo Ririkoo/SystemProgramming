@@ -24,6 +24,10 @@
         <h1>System Programming</h1>
         <a class="btn btn-info" role="button" href="/">Scanner and Parser</a>
     </div>
+    <h1>程式碼</h1>
+    <hr>
+    <pre id="error" class="alert alert-danger" style="display: none;" role="alert">
+    </pre>
     <div class="row-fluid marketing">
         <div class="span6">
             <form action="{{ url_for('add_entry') }}" method="post" class="add-entry form-group">
@@ -40,7 +44,11 @@
                 <input type="button" id="submit_data" class="btn btn-primary" value="Submit">
             </form>
         </div>
+        <h1>解析樹狀圖</h1>
+        <hr>
         <div id="visgraph" style="width: 1280px;height:720px;"></div>
+        <h1>直譯器</h1>
+        <hr>
         <div class="span6 emulator">
 
             <div class="row" style="margin-bottom: 10px">
@@ -54,14 +62,18 @@
             </div>
             <input type="button" id="step" class="btn btn-primary" value="step">
             <input type="button" id="autostep" class="btn btn-primary" value="autostep disable">
-            <label for="autostep_interval">Step Interval(ms):<input type="text" id="autostep_interval" value="100"></label>
+            <label for="autostep_interval">Step Interval(ms):<input type="text" id="autostep_interval"
+                                                                    value="100"></label>
             <label for="step_on_asm"><input id="step_on_asm" type="checkbox"> Step On Asm</label>
         </div>
-
+        <h2>ASM表</h2>
+        <table id="asm_code" class="table table-striped table-sm span6">
+        </table>
+        <h1>後台輸出</h1>
+        <hr>
         <div class="span6">
-            <table id="asm_code" class="table table-striped table-sm">
 
-            </table>
+
             <pre id="output" class="flash"></pre>
         </div>
 

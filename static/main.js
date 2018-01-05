@@ -56,9 +56,14 @@ $(function () {
             }
         }).done(function (data) {
             let output = $('#output');
-            if (data['error'] !== undefined)
-                output.html(data['error']);
-            else {
+            let error = $('#error');
+            if (data['error'] !== undefined) {
+                error.html(data['error']);
+                error.show();
+                output.html('');
+            } else {
+                error.html('');
+                error.hide();
                 drawGraph(data);
                 output.text(JSON.stringify(data, null, 2));
                 let asm_code = ASMGenerator.getAssemblerCode(data);
@@ -162,8 +167,8 @@ $(function () {
             return asm;
         }
 
-        static tagAsmRow(index,next_index,branch_index){
-             let $emulatorCode = $('#asm_code');
+        static tagAsmRow(index, next_index, branch_index) {
+            let $emulatorCode = $('#asm_code');
             $emulatorCode.find('tr[data-asm-index!=' + index + '] ').removeClass('table-success');
             $emulatorCode.find('tr[data-asm-index=' + index + '] ').addClass('table-success');
 
@@ -178,7 +183,7 @@ $(function () {
         static renderASMTable(asm, dom) {
             let html = '<tr><th>Index</th><th>OP</th><th>P1</th><th>P2</th><th>ID</th><th>TO</th></tr>';
             for (let code of asm) {
-                html += '<tr data-asm-index="'+code.index+'">';
+                html += '<tr data-asm-index="' + code.index + '">';
                 html += '<td>' + ASMGenerator._normalize(code.index) + '</td>';
                 html += '<td>' + ASMGenerator._normalize(code.op) + '</td>';
                 html += '<td>' + ASMGenerator._normalize(code.p1) + '</td>';
@@ -414,8 +419,8 @@ $(function () {
                 let current_index = this.asm_index++;
                 let next_index = this.asm_index;
                 this._handleCode(code);
-                ASMGenerator.tagAsmRow(current_index,next_index,this.asm_index);
-                if($('#step_on_asm').prop('checked'))
+                ASMGenerator.tagAsmRow(current_index, next_index, this.asm_index);
+                if ($('#step_on_asm').prop('checked'))
                     break;
             }
             Emulator.tagLine(this.line_number);
