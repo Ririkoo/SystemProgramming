@@ -18,7 +18,14 @@ $(function () {
             }
         });
     });
+    let interval = null;
+    let autostep = $("#autostep");
     $('#submit_data').on('click', function (event) {
+        if (interval !== null) {
+            clearInterval(interval);
+            autostep.val('autostep disable');
+            interval = null;
+        }
         text_edior.save();
         bnf_edior.save();
         $.ajax({
@@ -45,9 +52,9 @@ $(function () {
                 step.on('click', function () {
                     emulator.step();
                 });
-                let autostep = $("#autostep");
+
                 autostep.off('click');
-                let interval = null;
+
                 autostep.on('click', function () {
                     if (interval !== null) {
                         clearInterval(interval);
